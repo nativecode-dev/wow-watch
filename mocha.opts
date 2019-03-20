@@ -1,0 +1,8 @@
+--colors
+--full-trace
+--recursive
+--reporter min
+--require source-map-support/register
+--require ts-node/register
+--ui mocha-typescript
+specs/**/*.ts

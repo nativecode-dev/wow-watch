@@ -1,6 +1,6 @@
 import { Is } from '@nofrills/types'
 
-import { fromBuffer, fromFd, ZipFile, Entry } from 'yauzl'
+import { fromBuffer, fromFd, ZipFile, Entry, Options } from 'yauzl'
 import { fs } from '@nofrills/fs'
 import { CallbackReturn } from './Callback'
 import { Readable } from 'stream'
@@ -37,7 +37,7 @@ export class Unzip {
 
   async unzip(path: string): Promise<string[]> {
     const zip = await this.source
-    const entries = await this.unzipEntries(path, async ([entry, type]) => {
+    const entries = await this.unzipEntries(async ([entry, type]) => {
       const filename = fs.join(path, entry.fileName)
 
       if (type === EntryType.File) {
@@ -52,7 +52,7 @@ export class Unzip {
     return entries.map(entry => fs.join(path, entry.fileName))
   }
 
-  async unzipEntries(path: string, callback: UnzipCallback): Promise<Entry[]> {
+  async unzipEntries(callback?: UnzipCallback): Promise<Entry[]> {
     const zip = await this.source
 
     return new Promise((resolve, reject) => {
@@ -62,7 +62,9 @@ export class Unzip {
       zip.on('entry', entry => {
         const type = entry.fileName.endsWith('/') ? EntryType.Directory : EntryType.File
 
-        if (callback([entry, type])) {
+        if (callback && callback([entry, type])) {
+          entries.push(entry)
+        } else if (callback === undefined) {
           entries.push(entry)
         }
 
@@ -75,6 +77,11 @@ export class Unzip {
   }
 
   private resolveSource(source: ZipSource): Promise<ZipFile> {
+    const options: Options = {
+      autoClose: true,
+      lazyEntries: true,
+    }
+
     return new Promise((resolve, reject) => {
       const handler = (error: Error | undefined, zipfile: ZipFile | undefined) => {
         if (error) {
@@ -87,9 +94,9 @@ export class Unzip {
       }
 
       if (Is.number(source)) {
-        fromFd(source as number, (error, zipfile) => handler(error, zipfile))
+        fromFd(source as number, options, (error, zipfile) => handler(error, zipfile))
       } else {
-        fromBuffer(source as Buffer, (error, zipfile) => handler(error, zipfile))
+        fromBuffer(source as Buffer, options, (error, zipfile) => handler(error, zipfile))
       }
     })
   }
