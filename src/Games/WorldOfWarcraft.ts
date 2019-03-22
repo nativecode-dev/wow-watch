@@ -1,6 +1,7 @@
 import { fs } from '@nofrills/fs'
 
 import { Game } from './Game'
+import { GameMod } from './GameMod'
 
 export class WorldOfWarcraft extends Game {
   constructor(location: string) {
@@ -13,5 +14,9 @@ export class WorldOfWarcraft extends Game {
 
   get settingsLocation(): string {
     return fs.join(this.gameLocation, '_retail_', 'WTF')
+  }
+
+  getMods(): Promise<GameMod[]> {
+    return Promise.reject()
   }
 }
